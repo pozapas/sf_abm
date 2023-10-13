@@ -52,8 +52,10 @@ def edge_tot_pop(L, day, hour):
             except KeyError:
                 edge_volume[p[0]] = p[1]
     t1 = time.time()
-    logger.info('DY{}_HR{}: # edges to be updated {}, taking {} seconds'.format(day, hour, len(edge_volume), t1-t0))
-    
+    logger.info(
+        f'DY{day}_HR{hour}: # edges to be updated {len(edge_volume)}, taking {t1 - t0} seconds'
+    )
+
     # with open('edge_volume_2.json', 'w') as outfile:
     #     json.dump(edge_volume, outfile, indent=2)
 
@@ -61,17 +63,20 @@ def edge_tot_pop(L, day, hour):
 
 def one_step(day, hour):
     ### One time step of ABM simulation
-    
+
     logger = logging.getLogger('main.one_step')
 
     ### Read/Generate OD matrix for this time step
     absolute_path = os.path.dirname(os.path.abspath(__file__))
     global OD
-    OD = pd.read_csv(absolute_path+'/../TNC/output/SF_graph_DY{}_HR{}_OD_50000.csv'.format(day, hour))
+    OD = pd.read_csv(
+        absolute_path
+        + f'/../TNC/output/SF_graph_DY{day}_HR{hour}_OD_50000.csv'
+    )
 
     ### Define processes
     process_count = 4
-    logger.debug('number of process is {}'.format(process_count))
+    logger.debug(f'number of process is {process_count}')
 
     ### Build a pool
     pool = Pool(processes=process_count)
@@ -79,7 +84,7 @@ def one_step(day, hour):
 
     ### Find shortest pathes
     unique_origin = 200 # OD.shape[0]
-    logger.info('DY{}_HR{}: # OD rows (unique origins) {}'.format(day, hour, unique_origin))
+    logger.info(f'DY{day}_HR{hour}: # OD rows (unique origins) {unique_origin}')
 
     t_odsp_0 = time.time()
     res = pool.imap_unordered(map_edge_pop, range(unique_origin))
@@ -88,15 +93,12 @@ def one_step(day, hour):
     pool.close()
     pool.join()
     t_odsp_1 = time.time()
-    logger.debug('shortest_path time is {}'.format(t_odsp_1 - t_odsp_0))
+    logger.debug(f'shortest_path time is {t_odsp_1 - t_odsp_0}')
 
     ### Collapse into edge total population dictionary
     edge_pop_tuples, destination_counts = zip(*res)
-    logger.info('DY{}_HR{}: # destinations {}'.format(day, hour, sum(destination_counts)))
-    edge_volume = edge_tot_pop(edge_pop_tuples, day, hour)
-    #print(list(edge_volume.items())[0])
-
-    return edge_volume
+    logger.info(f'DY{day}_HR{hour}: # destinations {sum(destination_counts)}')
+    return edge_tot_pop(edge_pop_tuples, day, hour)
 
 ### Put geojson object to S3, which will be accessed by DeckGL
 def geojson2s3(geojson_dict, out_bucket, out_key):
@@ -122,57 +124,57 @@ def write_geojson(g, day, hour):
                 'sec_speed': edge['sec_length']/edge['t_new'], 
                 'sec_volume': edge['volume']}}
         feature_list.append(feature)
-    
+
     feature_geojson = {'type': 'FeatureCollection', 'features': feature_list}
 
     S3_BUCKET = 'sf-abm'
     S3_FOLDER = 'test_0707/'
-    KEY = S3_FOLDER+'DY{}_HR{}.json'.format(day, hour)
+    KEY = f'{S3_FOLDER}DY{day}_HR{hour}.json'
     geojson2s3(feature_geojson, S3_BUCKET, KEY)
 
 def main():
     absolute_path = os.path.dirname(os.path.abspath(__file__))
     logging.basicConfig(filename=absolute_path+'/sf_abm_mp.log', level=logging.DEBUG)
     logger = logging.getLogger('main')
-    logger.info('{} \n\n'.format(datetime.datetime.now()))
+    logger.info(f'{datetime.datetime.now()} \n\n')
 
     t_start = time.time()
 
     ### Read initial graph
     global g
     g = igraph.Graph.Read_Pickle(absolute_path+'/../data_repo/data/sf/network_graph.pkl')
-    logger.info('graph summary {}'.format(g.summary()))
+    logger.info(f'graph summary {g.summary()}')
     g.es['fft'] = np.array(g.es['sec_length'], dtype=np.float)/np.array(g.es['maxmph'], dtype=np.float)*2.23694
     fft_array = np.array(g.es['fft'], dtype=np.float)
     capacity_array = np.array(g.es['capacity'], dtype=np.float)
     ### 2.23694 is to convert mph to m/s;
     ### the free flow time should still be calibrated rather than equal to the time at speed limit, check coefficient 1.2 in defining ['weight']
-    logger.info('max/min FFT in seconds: {}/{}'.format(max(g.es['fft']), min(g.es['fft'])))
+    logger.info(f"max/min FFT in seconds: {max(g.es['fft'])}/{min(g.es['fft'])}")
 
     g.es['weight'] = fft_array * 1.2 ### According to (Colak, 2015), for SF, even vol=0, t=1.2*fft, maybe traffic light? 1.2 is f_p - k_bay
 
     for day in [1]:
         for hour in range(9, 10):
 
-            logger.info('*************** DY{} HR{} ***************'.format(day, hour))
+            logger.info(f'*************** DY{day} HR{hour} ***************')
 
             t0 = time.time()
             edge_volume = one_step(day, hour)
             t1 = time.time()
-            logger.info('DY{}_HR{}: running time {}'.format(day, hour, t1-t0))
+            logger.info(f'DY{day}_HR{hour}: running time {t1 - t0}')
 
             ### Update graph
             volume_array = np.zeros(g.ecount())
             volume_array[list(edge_volume.keys())] = np.array(list(edge_volume.values()))*400 ### 400 is the factor to scale Uber/Lyft trip # to total car trip # in SF.
             g.es['volume'] = volume_array
-            logger.info('DY{}_HR{}: max link volume {}'.format(day, hour, max(volume_array)))
+            logger.info(f'DY{day}_HR{hour}: max link volume {max(volume_array)}')
             g.es['t_new'] = fft_array*(1.2+0.78*(volume_array/capacity_array)**4) ### BPR and (colak, 2015)
             g.es['weight'] = g.es['t_new']
 
-            #write_geojson(g, day, hour)
+                    #write_geojson(g, day, hour)
 
     t_end = time.time()
-    logger.info('total run time is {} seconds \n\n\n\n\n'.format(t_end-t_start))
+    logger.info(f'total run time is {t_end - t_start} seconds \n\n\n\n\n')
 
 if __name__ == '__main__':
     main()

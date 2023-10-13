@@ -42,7 +42,7 @@ def main():
         elif link['tag_type'] in ('trunk', 'trunk_link', 'primary', 'primary_link'): link['speed_limit'] = 55
         else: link['speed_limit'] = 25
 
-    links_osmid = set([re.sub("[^0-9]", "", key) for key, value in links_data.items()])
+    links_osmid = {re.sub("[^0-9]", "", key) for key, value in links_data.items()}
 
     osm_file = 'data_repo/target.osm'
     osm_data = json.load(open(osm_file))

@@ -10,21 +10,18 @@ absolute_path = os.path.dirname(os.path.abspath(__file__))
 folder = 'sf'
 
 ### Construct the graph nodes from nodes.json
-nodes_json = json.load(open(absolute_path+'/../data/{}/nodes.json'.format(folder)))
+nodes_json = json.load(open(f'{absolute_path}/../data/{folder}/nodes.json'))
 print('number of nodes: ', len(nodes_json))
-node_index = 0
 node_data = []
-for n, cor in nodes_json.items():
+for node_index, (n, cor) in enumerate(nodes_json.items()):
     node_element = {
     'node_osmid': n,
     'node_index': node_index,
     'n_x': cor[1],
     'n_y': cor[0]}
     node_data.append(node_element)
-    node_index += 1
-
 ### Construct the graph edges
-ways_json = json.load(open(absolute_path+'/../data/{}/ways.json'.format(folder)))
+ways_json = json.load(open(f'{absolute_path}/../data/{folder}/ways.json'))
 print('number of edges: ', len(ways_json))
 #edge_index = 0
 edge_data = []
@@ -48,7 +45,10 @@ for way in ways_json:
         #edge_index += 1
 
 ### Check if all nodes in the edge dataset are contained in the provided nodes dataset
-print('Are all nodes in edges in nodes.json: ', edge_nodes_set.issubset(set([*nodes_json])))
+print(
+    'Are all nodes in edges in nodes.json: ',
+    edge_nodes_set.issubset({*nodes_json}),
+)
 
 ### Construct the graph object
 g = igraph.Graph.DictList(
@@ -65,10 +65,10 @@ g.simplify(multiple=True, loops=True,
 g.es['edge_index'] = list(range(g.ecount()))
 print(g.summary())
 
-g.write_pickle(absolute_path+'/../data/{}/network_graph.pkl'.format(folder)) ### Save as pkl for preserving coordinate precision
+g.write_pickle(f'{absolute_path}/../data/{folder}/network_graph.pkl')
 
 node_osmid2graphid_dict = dict(zip(g.vs['node_osmid'], range(g.vcount())))
-with open(absolute_path+'/../data/{}/node_osmid2graphid.json'.format(folder), 'w') as outfile:
+with open(f'{absolute_path}/../data/{folder}/node_osmid2graphid.json', 'w') as outfile:
     json.dump(node_osmid2graphid_dict, outfile, indent=2)
 
 save_geojson = True
@@ -104,9 +104,9 @@ if save_geojson:
         edges_feature_list.append(edge_feature)
     edges_geojson = {'type': 'FeatureCollection', 'features': edges_feature_list}
 
-    with open(absolute_path+'/../data/{}/graph_edges.geojson'.format(folder), 'w') as edges_outfile:
+    with open(f'{absolute_path}/../data/{folder}/graph_edges.geojson', 'w') as edges_outfile:
         json.dump(edges_geojson, edges_outfile, indent=2)
 
-    with open(absolute_path+'/../data/{}/graph_nodes.geojson'.format(folder), 'w') as nodes_outfile:
+    with open(f'{absolute_path}/../data/{folder}/graph_nodes.geojson', 'w') as nodes_outfile:
         json.dump(nodes_geojson, nodes_outfile, indent=2)
 
