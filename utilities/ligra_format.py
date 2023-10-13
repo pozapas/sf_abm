@@ -9,7 +9,7 @@ def main():
     weight_attr='length'#'sec_length'
     out_filename='London_Directed/London_0621.tsv'
 
-    g = igraph.load('data_repo/'+in_filename) ### This file contains the weekday 9am link level travel time for SF, imputed data collected from a month worth of Google Directions API
+    g = igraph.load(f'data_repo/{in_filename}')
     print(g.summary())
 
     s_list = [e.source for e in g.es]
@@ -23,7 +23,7 @@ def main():
     print(ligra_array.shape)
     print(ligra_array[0:10,:])
 
-    np.savetxt('data_repo/'+out_filename, ligra_array, fmt='%d\t%d\t%.6f')
+    np.savetxt(f'data_repo/{out_filename}', ligra_array, fmt='%d\t%d\t%.6f')
     
 
 if __name__ == '__main__':

@@ -17,14 +17,11 @@ absolute_path = os.path.dirname(os.path.abspath(__file__))
 ################################################################
 
 def find_in_nodes(row, points, nodes_df):
-    ### return the indices of points in nodes_df that are contained in row['geometry']
-    ### this function is called by TAZ_nodes()
     if row['geometry'].type == 'MultiPolygon':
         return []
-    else:
-        path = mpltPath.Path(list(zip(*row['geometry'].exterior.coords.xy)))
-        in_index = path.contains_points(points)
-        return nodes_df['index'].loc[in_index].tolist()
+    path = mpltPath.Path(list(zip(*row['geometry'].exterior.coords.xy)))
+    in_index = path.contains_points(points)
+    return nodes_df['index'].loc[in_index].tolist()
 
 def TAZ_nodes():
     ### Find corresponding nodes for each TAZ
@@ -91,7 +88,7 @@ def TAZ_nodes_OD(day, hour, count):
     for i in range(20):
         OD_matrix, errors = OD_iterations(OD_matrix, np.array(target_O), np.array(target_D))
         errors_list.append(errors)
-        print('errors at iteration {}: {}'.format(i, errors))
+        print(f'errors at iteration {i}: {errors}')
     print('sum of OD matrix elements', np.sum(OD_matrix), 'max', np.max(OD_matrix), 'min', np.min(OD_matrix), 'trace', np.trace(OD_matrix))
     ### As we are going to ignore inter-TAZ trips (assuming they are not by car, setting diagonal elements to zero), the trace of the OD matrix should not be too big compared to the total sum of the matrix elements
     # print(target_O)
@@ -117,7 +114,7 @@ def TAZ_nodes_OD(day, hour, count):
     for k, v in OD_counter.items():
         taz_O = k//len(target_O)+1 ### TAZ index starts from 1; convert from matrix element index to matrix row and column
         taz_D = k%len(target_O)+1
-        
+
         ### use the nodes from the next TAZ if there is no nodes in the current TAZ
         ### Scenario 1: TAZ=741. It is in downtown, with many pickups and dropoffs. However, all the nodes are on the boundary (no node in TAZ=741). Then we use the nodes from nearby TAZs.
         ### Scenario 2: TAZ=384, 385. There is no nodes in these TAZs because they are small islands. There should be no OD pairs sampled from these TAZs either.
@@ -127,14 +124,20 @@ def TAZ_nodes_OD(day, hour, count):
         nodal_OD_pairs = random.choices(list(itertools.product(taz_nodes_dict[str(taz_O)], taz_nodes_dict[str(taz_D)])), k=v)
         nodal_OD_counter = Counter(nodal_OD_pairs)
 
-        for nodal_k, nodal_v in nodal_OD_counter.items():
-            nodal_OD.append([node_osmid2graphid_dict[nodal_k[0]], node_osmid2graphid_dict[nodal_k[1]], nodal_v])
-
-
+        nodal_OD.extend(
+            [
+                node_osmid2graphid_dict[nodal_k[0]],
+                node_osmid2graphid_dict[nodal_k[1]],
+                nodal_v,
+            ]
+            for nodal_k, nodal_v in nodal_OD_counter.items()
+        )
     nodal_OD_df = pd.DataFrame(nodal_OD, columns=['O', 'D', 'flow'])
     print(nodal_OD_df.head())
 
-    nodal_OD_df.to_csv(absolute_path+'/output/SF_graph_DY{}_HR{}_OD_{}.csv'.format(day, hour, count))
+    nodal_OD_df.to_csv(
+        absolute_path + f'/output/SF_graph_DY{day}_HR{hour}_OD_{count}.csv'
+    )
 
 
 if __name__ == '__main__':

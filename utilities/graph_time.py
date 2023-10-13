@@ -1,8 +1,8 @@
-import igraph 
-import sys 
+import igraph
+import sys
 import scipy.sparse
 import scipy.io as sio
-import numpy as np 
+import numpy as np
 import time
 import os
 
@@ -10,7 +10,7 @@ sys.path.insert(0, '/Users/bz247')
 from sp import interface 
 
 absolute_path = os.path.dirname(os.path.abspath(__file__))
-graph_file = absolute_path+'/../0_network/data/sf/network_sparse.mtx'
+graph_file = f'{absolute_path}/../0_network/data/sf/network_sparse.mtx'
 
 ### Time the PQ
 print('########### Priority Queue SP #############')
@@ -26,7 +26,9 @@ ta2 = time.time()
 path_pq = [vertex[1] for vertex in route_pq]
 ta3 = time.time()
 print('PQ: distance 1020-->20: ', sp_pq.distance(20))
-print('PQ: total time {}, dijkstra() {}, route() {}, vertex list {}, \n'.format(ta3-ta0, ta1-ta0, ta2-ta1, ta3-ta2))
+print(
+	f'PQ: total time {ta3 - ta0}, dijkstra() {ta1 - ta0}, route() {ta2 - ta1}, vertex list {ta3 - ta2}, \n'
+)
 
 # Time igraph
 print('############## igraph ################')
@@ -41,7 +43,9 @@ distance_igraph = g_igraph.shortest_paths_dijkstra(1019, 19, weights='weight')
 tb0 = time.time()
 path_igraph = g_igraph.get_shortest_paths(1019, 19, weights='weight', output='vpath')
 tb1 = time.time()
-print('igraph ODSP: 1019-->19 distance {}, running time {}: \n'.format(distance_igraph[0][0], tb1-tb0))
+print(
+	f'igraph ODSP: 1019-->19 distance {distance_igraph[0][0]}, running time {tb1 - tb0}: \n'
+)
 
 tb2 = time.time()
 path_igraph_sssp = g_igraph.get_shortest_paths(1019, weights='weight', output='epath')

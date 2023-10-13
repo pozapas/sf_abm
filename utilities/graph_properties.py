@@ -49,7 +49,7 @@ def main():
     for i, v in enumerate(val):
         plt.text(i-0.25, v,  str(v), color='blue', fontweight='bold')
     plt.xlim([-1,(int(max(loc))+1)])
-    plt.title('Degree distribution of mode {}'.format(mode))
+    plt.title(f'Degree distribution of mode {mode}')
     plt.xlabel('Degree')
     plt.ylabel('Vertices count')
     plt.show()

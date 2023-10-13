@@ -38,17 +38,17 @@ def osm_to_geojson(folder='sf'):
 
     # Load OSM data as downloaded from overpass
     absolute_path = os.path.dirname(os.path.abspath(__file__))
-    osm_data = json.load(open(absolute_path+'/../data/{}/target.osm'.format(folder)))
+    osm_data = json.load(open(f'{absolute_path}/../data/{folder}/target.osm'))
     osm_data = osm_data['elements']
     print('length of the OSM data: ', len(osm_data))
 
     # Based on the OSM data, make a dictionary of node elements: all_nodes = {osm_node_id:(lat,lon), ...}
     all_nodes = {n['id']: (n['lat'], n['lon']) for n in osm_data if n['type']=='node'}
-    print('it includes {} nodes'.format(len(all_nodes)))
+    print(f'it includes {len(all_nodes)} nodes')
 
     # Make a list of way elements
     all_ways = [w_e for w_e in osm_data if w_e['type']=='way']
-    print('it includes {} nodes'.format(len(all_ways)))
+    print(f'it includes {len(all_ways)} nodes')
 
     nodes_feature_list = [] ### OSM node element to "Point" feature in geojson format
     for k, v in all_nodes.items():
@@ -77,10 +77,10 @@ def osm_to_geojson(folder='sf'):
     links_geojson = {'type': 'FeatureCollection', 'features': links_feature_list}
 
     # Save output
-    with open(absolute_path+'/../data/{}/osm_ways.geojson'.format(folder), 'w') as links_outfile:
+    with open(f'{absolute_path}/../data/{folder}/osm_ways.geojson', 'w') as links_outfile:
         json.dump(links_geojson, links_outfile, indent=2)
 
-    with open(absolute_path+'/../data/{}/osm_nodes.geojson'.format(folder), 'w') as nodes_outfile:
+    with open(f'{absolute_path}/../data/{folder}/osm_nodes.geojson', 'w') as nodes_outfile:
         json.dump(nodes_geojson, nodes_outfile, indent=2)
 
 
@@ -133,7 +133,7 @@ def create_way(w, intersection_nodes, oneway_str, reverse):
     ### Capacity formula from the supplement notes in Colak, Lima and Gonzalez (2016)
     if w_speed_limit < 40:
         w_capacity = 950 * w_lanes
-    elif (w_speed_limit < 60) and (w_speed_limit >= 40):
+    elif w_speed_limit < 60:
         w_capacity = (1500+30*w_speed_limit) * w_lanes
     else:
         w_capacity = (1700+10*w_speed_limit) * w_lanes
@@ -157,32 +157,31 @@ def osm_to_json(output_geojson=False, folder = 'sf'):
 
     # Load OSM data as downloaded from overpass
     absolute_path = os.path.dirname(os.path.abspath(__file__))
-    osm_data = json.load(open(absolute_path+'/../data/{}/target.osm'.format(folder)))
+    osm_data = json.load(open(f'{absolute_path}/../data/{folder}/target.osm'))
     osm_data = osm_data['elements']
     print('length of the OSM data: ', len(osm_data))
 
     # Based on the OSM data, make a dictionary of node element: all_nodes = {osm_node_id:(lat,lon), ...}
     all_nodes = {n['id']: (n['lat'], n['lon']) for n in osm_data if n['type']=='node'}
-    print('it includes {} nodes'.format(len(all_nodes)))
+    print(f'it includes {len(all_nodes)} nodes')
     random_key = random.choice(list(all_nodes))
-    print('example, {}: {}'.format(random_key, all_nodes[random_key]))
+    print(f'example, {random_key}: {all_nodes[random_key]}')
 
     # Make a list of way elements
     all_ways = [w_e for w_e in osm_data if w_e['type']=='way']
-    print('it includes {} nodes'.format(len(all_ways)))
+    print(f'it includes {len(all_ways)} nodes')
     end_nodes_l = [] # list holding all end nodes of the way elements. All will be preserved.
     mid_nodes_l = [] # list holding all mid nodes of the way elements. Some will be discarded as curve nodes.
     ###################### lecture break ############################
     for way in all_ways:
         way_nodes = way['nodes']
-        end_nodes_l.append(way_nodes[0])
-        end_nodes_l.append(way_nodes[-1])
+        end_nodes_l.extend((way_nodes[0], way_nodes[-1]))
         mid_nodes_l += way_nodes[1:-1]
         # Use harversine formula to calculate the length between two nodes. Set length as 0.1 if calculated distance is smaller
         # some nodes will be cleaned as they define curves rather than intersections. However, the length between two nodes will contribute to the final total length
         way['length'] = [max(0.1, haversine.haversine(all_nodes[x][0], all_nodes[x][1], all_nodes[y][0], all_nodes[y][1])) for (x,y) in zip(way_nodes, way_nodes[1:])]
-        #pprint.pprint(way)
-        #sys.exit(0)
+            #pprint.pprint(way)
+            #sys.exit(0)
 
     # critieria for filtering out curve nodes, but preserve intersections:
     # 1. all end nodes are preserved
@@ -230,12 +229,12 @@ def osm_to_json(output_geojson=False, folder = 'sf'):
                 ways_list.append(way)
                 nodes_in_ways_list += nodes_in_way
 
-    with open(absolute_path+'/../data/{}/ways.json'.format(folder), 'w') as links_outfile:
+    with open(f'{absolute_path}/../data/{folder}/ways.json', 'w') as links_outfile:
         json.dump(ways_list, links_outfile, indent=2)
 
     nodes_in_ways_set = set(nodes_in_ways_list)
     nodes_in_links_dict = {n: all_nodes[n] for n in nodes_in_ways_set}
-    with open(absolute_path+'/../data/{}/nodes.json'.format(folder), 'w') as nodes_outfile:
+    with open(f'{absolute_path}/../data/{folder}/nodes.json', 'w') as nodes_outfile:
         json.dump(nodes_in_links_dict, nodes_outfile, indent=2)
 
     if output_geojson:
@@ -265,10 +264,10 @@ def osm_to_json(output_geojson=False, folder = 'sf'):
             links_feature_list.append(link_feature)
         links_geojson = {'type': 'FeatureCollection', 'features': links_feature_list}
 
-        with open(absolute_path+'/../data/{}/converted_ways.geojson'.format(folder), 'w') as links_outfile:
+        with open(f'{absolute_path}/../data/{folder}/converted_ways.geojson', 'w') as links_outfile:
             json.dump(links_geojson, links_outfile, indent=2)
 
-        with open(absolute_path+'/../data/{}/convertd_nodes.geojson'.format(folder), 'w') as nodes_outfile:
+        with open(f'{absolute_path}/../data/{folder}/convertd_nodes.geojson', 'w') as nodes_outfile:
             json.dump(nodes_geojson, nodes_outfile, indent=2)
 
 

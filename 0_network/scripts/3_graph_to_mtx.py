@@ -1,8 +1,8 @@
-import igraph 
-import sys 
+import igraph
+import sys
 import scipy.sparse as sp
 import scipy.io as sio
-import numpy as np 
+import numpy as np
 import json
 import time
 import os 
@@ -10,7 +10,7 @@ import os
 absolute_path = os.path.dirname(os.path.abspath(__file__))
 folder = 'sf'
 
-sf_graph_file = absolute_path+'/../data/{}/network_graph.pkl'.format(folder)
+sf_graph_file = f'{absolute_path}/../data/{folder}/network_graph.pkl'
 g = igraph.Graph.Read_Pickle(sf_graph_file)
 print('Summary of the graph: \n', g.summary())
 
@@ -30,7 +30,7 @@ print('Summary of the graph: \n', g.summary())
 # sys.exit(0)
 
 edgelist = g.get_edgelist()
-print(edgelist[0:10])
+print(edgelist[:10])
 row = [e[0] for e in edgelist]
 col = [e[1] for e in edgelist]
 wgh = g.es['sec_length']
@@ -51,6 +51,6 @@ g_coo = sp.coo_matrix((wgh, (row, col)), shape=(g.vcount(), g.vcount()))
 print(g_coo.shape, len(g_coo.data))
 #g_csr = sp.csr_matrix(g_coo)
 #sp.save_npz('../data/network_sparse.npz', g_csr)
-sio.mmwrite(absolute_path+'/../data/{}/network_sparse.mtx'.format(folder), g_coo)
+sio.mmwrite(f'{absolute_path}/../data/{folder}/network_sparse.mtx', g_coo)
 # g_coo = sio.mmread(absolute_path+'/../data/{}/network_sparse.mtx'.format(folder))
 

@@ -1,7 +1,7 @@
-import igraph 
-import sys 
+import igraph
+import sys
 import scipy.sparse as sp
-import numpy as np 
+import numpy as np
 import json
 import time
 
@@ -25,7 +25,7 @@ sys.exit(0)
 # sys.exit(0)
 
 edgelist = g.get_edgelist()
-print(edgelist[0:10])
+print(edgelist[:10])
 row = [e[0] for e in edgelist]
 col = [e[1] for e in edgelist]
 wgh = g.es['sec_length']
